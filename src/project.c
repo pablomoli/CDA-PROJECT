@@ -5,8 +5,43 @@
 /* 10 Points */
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
-
+    switch (ALUControl) {
+        case '000':
+            // Z = A + B
+            *ALUresult = A + B;
+            break;
+        case '001':
+            // Z = A - B
+            *ALUresult = A - B;
+            break;
+        case '010':
+            // If A < B, Z = 1; otherwise, Z = 0
+            *ALUresult = A < B ? 1 : 0;
+            break;
+        case '011':
+            // If A < B, Z = 1; otherwise, Z = 0 (A and B are unsigned integers)
+            *ALUresult = A < B ? 1 : 0;
+            break;
+        case '100':
+            // Z = A AND B
+            *ALUresult = A & B;
+            break;
+        case '101':
+            // Z = A OR B
+            *ALUresult = A | B;
+            break;
+        case '110':
+            // Z = Shift B left by 16 bits
+            *ALUresult = B << 16;
+            break;
+        case '111':
+            // Z = NOT A
+            *ALUresult = ~A;
+            break;
+    }
+    *Zero = (*ALUresult == 0) ? '1' : '0';
 }
+
 
 /* instruction fetch */
 /* 10 Points */
@@ -23,15 +58,13 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 /* 10 Points */
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
-	*op = instruction >> 26 & ((1 << 6) -1); //6 bits
-
-	*r1 = instruction >> 21 & ((1 << 5)-1); // 5 bits
-	*r2 = instruction >> 16 & ((1 << 5)-1); // 5 bits
-	*r3 = instruction >> 11 & ((1 << 5) -1); // 5 bits
-
-	*funct= instruction  & ((1 << 6) -1); //6 bits
+	*op = instruction >> 26 & ((1 << 6) - 1); //6 bits
+	*r1 = instruction >> 21 & ((1 << 5) - 1); // 5 bits
+	*r2 = instruction >> 16 & ((1 << 5) - 1); // 5 bits
+	*r3 = instruction >> 11 & ((1 << 5) - 1); // 5 bits
+	*funct= instruction  & ((1 << 6) - 1); //6 bits
 	*offset = instruction & ((1 << 5) - 1); // 16bits
-	*jsec == instruction  & ((1 << 26) -1); // 26 bits
+	*jsec == instruction  & ((1 << 26) - 1); // 26 bits
 }
 
 
@@ -39,15 +72,23 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
 /* 15 Points */
 int instruction_decode(unsigned op,struct_controls *controls)
 {
-	controls->RegDst = 0;
-	controls->Jump = 0;
-	controls->Branch = 0;
-	controls->MemRead = 0;
-	controls->MemtoReg = 0;
-	controls->ALUOp = 0;
-	controls->MemWrite = 0;
-	controls->ALUSrc = 0;
-	controls->RegWrite = 0;
+    switch (op) {
+        // We might need to add more cases here and change control values
+        case '000':
+            controls->RegDst = 0;
+	        controls->Jump = 0;
+	        controls->Branch = 0;
+	        controls->MemRead = 0;
+	        controls->MemtoReg = 0;
+	        controls->ALUOp = 0;
+	        controls->MemWrite = 0;
+	        controls->ALUSrc = 0;
+	        controls->RegWrite = 0;
+            break;
+        default :
+            return 1;
+    }
+	return 0;
 }
 
 /* Read Register */
@@ -68,7 +109,7 @@ void sign_extend(unsigned offset,unsigned *extended_value)
 		*extended_value = offset | 0xFFFF0000;
 		return;
 	}
-	*extended_value = offset & 0x0000FFFF ;
+	*extended_value = offset & 0x0000FFFF;
 }
 
 /* ALU operations */
@@ -106,4 +147,3 @@ void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char 
 		*PC = (jsec << 2) | (*PC & 0xF0000000);
 	}
 }
-
