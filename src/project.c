@@ -12,9 +12,9 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* 10 Points */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
-	if((PC >> 2) % 4 != 0) return 1;
+	if((PC >> 2) % 4 != 0) return 1; // HALT
 
-	instruction = Mem[PC >> 2];
+	*instruction = Mem[PC >> 2];
 	return 0;
 }
 
@@ -23,15 +23,16 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 /* 10 Points */
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
-	*op = instruction >> 26;
-	*r1 = instruction >> 21 & ((1 << 5)-1);
-	*r2 = instruction >> 16 & ((1 << 5)-1);
-	*r3 = instruction >> 11 & ((1 << 5) -1);
-	*funct= instruction  & ((1 << 6) -1);
-	*offset = instruction & ((1 << 5) - 1);
-	*jsec == instruction  & ((1 << 26) -1);
-}
+	*op = instruction >> 26 & ((1 << 6) -1); //6 bits
 
+	*r1 = instruction >> 21 & ((1 << 5)-1); // 5 bits
+	*r2 = instruction >> 16 & ((1 << 5)-1); // 5 bits
+	*r3 = instruction >> 11 & ((1 << 5) -1); // 5 bits
+
+	*funct= instruction  & ((1 << 6) -1); //6 bits
+	*offset = instruction & ((1 << 5) - 1); // 16bits
+	*jsec == instruction  & ((1 << 26) -1); // 26 bits
+}
 
 
 /* instruction decode */
@@ -62,7 +63,12 @@ void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigne
 /* 10 Points */
 void sign_extend(unsigned offset,unsigned *extended_value)
 {
-	*extended_value = (offset >> 15) == 1;
+	unsigned isNegative = (offset >> 15);
+	if(isNegative){
+		*extended_value = offset | 0xFFFF0000;
+		return;
+	}
+	*extended_value = offset & 0x0000FFFF ;
 }
 
 /* ALU operations */
@@ -91,6 +97,13 @@ void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,
 /* 10 Points */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
+	*PC += 4;
 
+	if(Branch == 1 && Zero == 1){
+		*PC += extended_value << 2;
+	}
+	if(Jump){
+		*PC = (jsec << 2) | (*PC & 0xF0000000);
+	}
 }
 
